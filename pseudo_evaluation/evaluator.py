@@ -1,4 +1,4 @@
-"""Grade stored pseudocode answers with an LLM via OpenRouter.
+"""Grade stored pseudocode answers with any OpenAI-compatible chat API.
 
 Run from the repository root:  python -m pseudo_evaluation.evaluator
 """
@@ -57,18 +57,19 @@ def build_prompt(question, answer, max_answer_chars=4000):
 
 
 def call_llm(prompt, settings, session):
-    """POST to OpenRouter (OpenAI-compatible chat API); return the raw model text.
+    """POST to an OpenAI-compatible /chat/completions endpoint; return the raw model text.
 
     Raises RuntimeError on failure. The API key is never logged.
     """
     if not settings.llm_api_key:
-        raise RuntimeError("OPENROUTER_API_KEY is not set")
+        raise RuntimeError("LLM_API_KEY is not set")
     payload = {
         "model": settings.llm_model,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0,
-        "response_format": {"type": "json_object"},
     }
+    if settings.llm_json_mode:
+        payload["response_format"] = {"type": "json_object"}
     headers = {"Authorization": f"Bearer {settings.llm_api_key}"}
     attempts = settings.llm_retries + 1
     last_error = None
@@ -224,7 +225,7 @@ def export_xlsx(users, questions, path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Grade pseudocode answers with an LLM (OpenRouter)")
+    parser = argparse.ArgumentParser(description="Grade pseudocode answers with an LLM ")
     parser.add_argument("--force", action="store_true", help="re-evaluate already graded answers")
     parser.add_argument("--reg-no", type=int, help="only evaluate this RegNo")
     parser.add_argument("--no-xlsx", action="store_true", help="skip spreadsheet export")

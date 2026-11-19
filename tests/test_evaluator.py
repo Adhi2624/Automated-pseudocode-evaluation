@@ -18,7 +18,7 @@ QUESTIONS = {
 def make_settings(**kw):
     base = dict(
         mongo_uri="x", mongo_db="d", mongo_collection="c", cors_origins=(),
-        llm_url="http://llm.test/v1/chat/completions", llm_model="m", llm_api_key="k",
+        llm_base_url="http://llm.test/v1", llm_model="m", llm_api_key="k", llm_json_mode=True,
         llm_timeout=5.0, llm_retries=2, eval_delay_seconds=0.0,
         max_answer_chars=100, output_xlsx="x.xlsx",
     )
@@ -217,6 +217,15 @@ def test_call_llm_sends_bearer_key_and_chat_payload(requests_mock):
     body = req.json()
     assert body["model"] == "m" and body["messages"][0]["content"] == "p"
     assert body["temperature"] == 0
+    assert body["response_format"] == {"type": "json_object"}
+    assert s.llm_url == "http://llm.test/v1/chat/completions"
+
+
+def test_call_llm_json_mode_off_omits_response_format(requests_mock):
+    s = make_settings(llm_json_mode=False)
+    requests_mock.post(s.llm_url, json=chat("ok"))
+    ev.call_llm("p", s, requests.Session())
+    assert "response_format" not in requests_mock.last_request.json()
 
 
 def test_call_llm_requires_api_key():

@@ -42,9 +42,10 @@ An efficient platform for evaluating pseudocode submissions in programming compe
 | MONGO_DB | sproc | Database name |
 | MONGO_COLLECTION | user-details | Collection name |
 | CORS_ORIGINS | (empty) | Comma-separated allowed origins; empty disables CORS |
-| OPENROUTER_API_KEY | (required for grading) | OpenRouter API key; keep it secret, never commit it |
-| LLM_URL | https://openrouter.ai/api/v1/chat/completions | Chat completions endpoint |
-| LLM_MODEL | meta-llama/llama-3.1-70b-instruct | OpenRouter model id used by the grader |
+| LLM_API_KEY | (required for grading) | API key for the LLM provider (`OPENROUTER_API_KEY` also accepted); keep secret, never commit |
+| LLM_BASE_URL | https://openrouter.ai/api/v1 | Any OpenAI-compatible base URL (OpenRouter, OpenAI `https://api.openai.com/v1`, vLLM, Ollama `http://host:11434/v1`, ...); `/chat/completions` is appended |
+| LLM_MODEL | meta-llama/llama-3.1-70b-instruct | Model id for that provider |
+| LLM_JSON_MODE | true | Send `response_format: json_object`; set false if the provider rejects it |
 | LLM_TIMEOUT | 60 | Seconds per LLM request |
 | LLM_RETRIES | 3 | Retries per request |
 | EVAL_DELAY_SECONDS | 1 | Delay between grading calls |
