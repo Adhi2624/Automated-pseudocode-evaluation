@@ -1,0 +1,27 @@
+[
+  {
+    "id": 0,
+    "text": "Write a pseudocode to find the difference between the largest and smallest element in the given array",
+    "max_score": 10
+  },
+  {
+    "id": 1,
+    "text": "Design a pseudocode to find the frequency of each element in an array.",
+    "max_score": 10
+  },
+  {
+    "id": 2,
+    "text": "Write a pseudocode to check if a given string is a palindrome and to count the number of vowels in a given string.",
+    "max_score": 10
+  },
+  {
+    "id": 3,
+    "text": "Write a pseudocode to find the greatest common divisor (GCD) of two numbers using the Euclidean algorithm.",
+    "max_score": 10
+  },
+  {
+    "id": 4,
+    "text": "Design a pseudocode to reverse the digits of a number and also find its digits sum",
+    "max_score": 10
+  }
+]

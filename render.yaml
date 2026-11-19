@@ -1,0 +1,39 @@
+# Render Blueprint: web app + periodic grader, both built from the Dockerfile.
+# Secrets (sync: false) are prompted for in the Render dashboard; never commit them.
+services:
+  - type: web
+    name: pseudocode-web
+    runtime: docker
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: MONGO_URI          # MongoDB Atlas connection string
+        sync: false
+      - key: MONGO_DB
+        value: sproc
+      - key: MONGO_COLLECTION
+        value: user-details
+      - key: CORS_ORIGINS       # leave empty: pages are served from the same origin
+        value: ""
+
+  - type: cron
+    name: pseudocode-grader
+    runtime: docker
+    plan: starter
+    schedule: "*/10 * * * *"    # safe to re-run: finished answers are skipped
+    dockerCommand: python -m pseudo_evaluation.evaluator --no-xlsx
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB
+        value: sproc
+      - key: MONGO_COLLECTION
+        value: user-details
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: LLM_MODEL
+        value: meta-llama/llama-3.1-70b-instruct
+      - key: LLM_JSON_MODE
+        value: "true"

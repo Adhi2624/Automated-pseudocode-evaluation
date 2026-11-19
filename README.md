@@ -19,15 +19,46 @@ An efficient platform for evaluating pseudocode submissions in programming compe
 ## 🚀 Getting Started
 
 1. Clone this repository
-2. Install dependencies:
+2. Install dependencies with [uv](https://docs.astral.sh/uv/):
    ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
-3. Set up MongoDB and configure connection settings
-4. Run the FastAPI server:
+3. Start MongoDB and configure the environment:
    ```bash
-   uvicorn main:app --reload
+   cp .env.example .env   # then edit as needed
    ```
+4. Run the FastAPI server from the repo root:
+   ```bash
+   uv run uvicorn main:app --app-dir fastapi --reload
+   ```
+5. Run the tests: `uv run pytest`
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| MONGO_URI | mongodb://localhost:27017/ | MongoDB connection string |
+| MONGO_DB | sproc | Database name |
+| MONGO_COLLECTION | user-details | Collection name |
+| CORS_ORIGINS | (empty) | Comma-separated allowed origins; empty disables CORS |
+| LLM_API_KEY | (required for grading) | API key for the LLM provider (`OPENROUTER_API_KEY` also accepted); keep secret, never commit |
+| LLM_BASE_URL | https://openrouter.ai/api/v1 | Any OpenAI-compatible base URL (OpenRouter, OpenAI `https://api.openai.com/v1`, vLLM, Ollama `http://host:11434/v1`, ...); `/chat/completions` is appended |
+| LLM_MODEL | meta-llama/llama-3.1-70b-instruct | Model id for that provider |
+| LLM_JSON_MODE | true | Send `response_format: json_object`; set false if the provider rejects it |
+| LLM_TIMEOUT | 60 | Seconds per LLM request |
+| LLM_RETRIES | 3 | Retries per request |
+| EVAL_DELAY_SECONDS | 1 | Delay between grading calls |
+| MAX_ANSWER_CHARS | 4000 | Max characters per submitted answer |
+| OUTPUT_XLSX | user_pseudocode_scores.xlsx | Grader output file |
+
+Questions live in `questions.json` at the repo root.
+
+### Running the grader
+
+From the repository root:
+```bash
+uv run python -m pseudo_evaluation.evaluator
+```
 
 ## 📄 Pages
 
@@ -40,7 +71,6 @@ An efficient platform for evaluating pseudocode submissions in programming compe
 
 User details and pseudocode submissions are securely stored in MongoDB for easy retrieval and analysis.
 
-=
 ---
 
 Happy Coding! 💻🎉
