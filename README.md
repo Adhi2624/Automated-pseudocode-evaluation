@@ -19,20 +19,19 @@ An efficient platform for evaluating pseudocode submissions in programming compe
 ## 🚀 Getting Started
 
 1. Clone this repository
-2. Create a virtualenv and install dependencies:
+2. Install dependencies with [uv](https://docs.astral.sh/uv/):
    ```bash
-   python -m venv .venv && source .venv/bin/activate
-   pip install -r fastapi/requirements.txt
+   uv sync
    ```
 3. Start MongoDB and configure the environment:
    ```bash
    cp .env.example .env   # then edit as needed
    ```
-4. Run the FastAPI server from the `fastapi/` directory:
+4. Run the FastAPI server from the repo root:
    ```bash
-   cd fastapi
-   PYTHONPATH=.. uvicorn main:app --reload
+   uv run uvicorn main:app --app-dir fastapi --reload
    ```
+5. Run the tests: `uv run pytest`
 
 ### Environment variables
 
@@ -58,7 +57,7 @@ Questions live in `questions.json` at the repo root.
 
 From the repository root:
 ```bash
-python -m pseudo_evaluation.evaluator
+uv run python -m pseudo_evaluation.evaluator
 ```
 
 ## 📄 Pages

@@ -1,0 +1,31 @@
+[project]
+name = "automated-pseudocode-evaluation"
+version = "0.1.0"
+description = "Pseudocode contest web app and LLM-based grader"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi==0.102.0",
+    "uvicorn==0.23.0",
+    "pydantic==2.8.2",
+    "jinja2==3.1.2",
+    "email-validator==2.2.0",
+    "pymongo==4.9.1",
+    "python-dotenv==1.0.1",
+    "requests>=2.31",
+    "openpyxl>=3.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "httpx<0.28",
+    "mongomock",
+    "requests-mock",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
