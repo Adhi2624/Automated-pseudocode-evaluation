@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Staff login · Pseudo//Eval{% endblock %}
+{% block mainclass %}narrow{% endblock %}
+{% block content %}
+<div class="eyebrow">Staff</div>
+<h1>Staff login</h1>
+<form id="staff" class="panel" novalidate>
+  <div class="field"><label for="username">Username</label><input id="username" name="username" required autocomplete="username"></div>
+  <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" required autocomplete="current-password"></div>
+  <div class="form-error" role="alert"></div>
+  <div class="actions"><button class="btn" type="submit">Sign in</button></div>
+</form>
+{% endblock %}
+{% block scripts %}<script>
+bindForm($("#staff"), async (f) => {
+  await api("/api/staff/login", { method: "POST", body: { username: f.username, password: f.password } });
+  location.href = "/staff";
+});
+</script>{% endblock %}

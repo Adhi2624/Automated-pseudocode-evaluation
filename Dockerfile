@@ -13,10 +13,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
-COPY common ./common
-COPY pseudo_evaluation ./pseudo_evaluation
-COPY fastapi ./fastapi
-COPY questions.json ./
+COPY app ./app
+COPY data ./data
 
 RUN useradd --system --no-create-home app && chown -R app /app
 USER app
@@ -25,4 +23,4 @@ ENV PORT=8000
 EXPOSE 8000
 
 # Web app by default; the Render cron job overrides this with the grader command.
-CMD ["sh", "-c", "exec uvicorn main:app --app-dir fastapi --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]

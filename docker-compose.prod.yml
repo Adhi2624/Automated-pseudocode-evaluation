@@ -1,0 +1,28 @@
+# Production: NO database container. MongoDB Community Edition runs on the
+# server itself (or elsewhere); point MONGO_URI at it in .env.
+#   docker compose -f docker-compose.prod.yml up -d --build
+# MONGO_URI examples:
+#   same host (Linux):  mongodb://appuser:PASSWORD@host.docker.internal:27017/sproc?authSource=sproc
+#   remote host:        mongodb://appuser:PASSWORD@db.example.com:27017/sproc?authSource=sproc
+# mongod must listen on an address reachable from the container (not only 127.0.0.1)
+# and require authentication.
+services:
+  web:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Polls MongoDB for grading jobs (staff dashboard + each test's evaluation schedule). Needs the LLM_* settings in .env.
+  worker:
+    build: .
+    restart: always
+    command: python -m app.worker
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

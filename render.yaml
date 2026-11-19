@@ -1,35 +1,34 @@
-# Render Blueprint: web app + periodic grader, both built from the Dockerfile.
+# Render Blueprint: a single web service on the FREE plan, built from the Dockerfile.
+# Free plans have no background workers, so grading runs inside the web process (EMBEDDED_WORKER=true).
+# Free web services sleep after ~15 min without traffic and take up to a minute to wake: open the site
+# a few minutes before a test starts. For timed exams prefer a paid plan plus a separate worker.
 # Secrets (sync: false) are prompted for in the Render dashboard; never commit them.
 services:
   - type: web
     name: pseudocode-web
     runtime: docker
-    plan: starter
+    plan: free
     healthCheckPath: /
     envVars:
-      - key: MONGO_URI          # MongoDB Atlas connection string
+      - key: MONGO_URI          # connection string of your MongoDB Community server (use TLS + auth)
         sync: false
       - key: MONGO_DB
         value: sproc
       - key: MONGO_COLLECTION
         value: user-details
-      - key: CORS_ORIGINS       # leave empty: pages are served from the same origin
+      - key: STAFF_USERNAME
+        sync: false
+      - key: STAFF_PASSWORD
+        sync: false
+      - key: SECRET_KEY          # signs login cookies; generated once by Render
+        generateValue: true
+      - key: COOKIE_SECURE       # Render serves HTTPS
+        value: "true"
+      - key: CORS_ORIGINS        # same-origin pages: leave empty
         value: ""
-
-  - type: cron
-    name: pseudocode-grader
-    runtime: docker
-    plan: starter
-    schedule: "*/10 * * * *"    # safe to re-run: finished answers are skipped
-    dockerCommand: python -m pseudo_evaluation.evaluator --no-xlsx
-    envVars:
-      - key: MONGO_URI
-        sync: false
-      - key: MONGO_DB
-        value: sproc
-      - key: MONGO_COLLECTION
-        value: user-details
-      - key: LLM_API_KEY
+      - key: EMBEDDED_WORKER     # run the grading worker inside this service
+        value: "true"
+      - key: LLM_API_KEY         # OpenRouter key
         sync: false
       - key: LLM_BASE_URL
         value: https://openrouter.ai/api/v1

@@ -1,0 +1,58 @@
+# Local development: app + grading worker + a throwaway MongoDB container.
+#   docker compose up --build
+# App: http://localhost:8000   Mongo: localhost:27017 (data kept in the mongo-data volume)
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/
+      MONGO_DB: sproc
+      MONGO_COLLECTION: user-details
+      CORS_ORIGINS: ""
+      # Local-only credentials. Never reuse these in production (see docker-compose.prod.yml).
+      STAFF_USERNAME: staff
+      STAFF_PASSWORD: staff-local-only
+      SECRET_KEY: local-dev-secret-not-for-production
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # Polls MongoDB for grading jobs (queued from the staff dashboard or by each test's evaluation schedule).
+  # LLM settings come from your shell / .env (compose substitutes them); with none set, grading jobs record errors.
+  worker:
+    build: .
+    restart: unless-stopped
+    command: python -m app.worker
+    environment:
+      MONGO_URI: mongodb://mongo:27017/
+      MONGO_DB: sproc
+      MONGO_COLLECTION: user-details
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://openrouter.ai/api/v1}
+      LLM_MODEL: ${LLM_MODEL:-meta-llama/llama-3.1-70b-instruct}
+      LLM_JSON_MODE: ${LLM_JSON_MODE:-true}
+      WORKER_POLL_SECONDS: "5"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # lets the worker reach a local Ollama at http://host.docker.internal:11434/v1
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo-data:

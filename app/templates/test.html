@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Test · Pseudo//Eval{% endblock %}
+{% block topbar %}{% endblock %}
+{% block body %}
+<div id="bar" class="testbar hidden">
+  <div><span class="brand">PSEUDO<b>//</b>EVAL</span> <span id="who" class="muted mono"></span></div>
+  <div class="saved" id="saved"></div>
+  <div class="timer" id="timer">--:--</div>
+  <div style="flex-basis:100%" class="progress"><i id="prog"></i></div>
+</div>
+<main id="app"><p class="muted mono">Loading…</p></main>
+{% endblock %}
+{% block scripts %}<script src="/static/js/test.js"></script>{% endblock %}

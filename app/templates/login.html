@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Student login · Pseudo//Eval{% endblock %}
+{% block mainclass %}narrow{% endblock %}
+{% block content %}
+<div class="eyebrow">Student</div>
+<h1>Student login</h1>
+<p class="muted" id="notice">Sign in with your register number and date of birth. Not on the list? Ask your staff to add you.</p>
+<form id="login" class="panel" novalidate>
+  <div class="field"><label for="RegNo">Register / roll number</label><input id="RegNo" name="RegNo" inputmode="numeric" required autocomplete="username"></div>
+  <div class="field"><label for="dob">Date of birth</label><input id="dob" name="dob" type="date" required autocomplete="bday"></div>
+  <div class="form-error" role="alert"></div>
+  <div class="actions"><button class="btn" type="submit">Enter</button></div>
+</form>
+{% endblock %}
+{% block scripts %}<script src="/static/js/login.js"></script>{% endblock %}

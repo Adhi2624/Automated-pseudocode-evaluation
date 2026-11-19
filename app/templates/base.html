@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Pseudo//Eval{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  {% block topbar %}
+  <header class="topbar">
+    <a class="brand" href="/">PSEUDO<b>//</b>EVAL</a>
+    <nav class="nav">{% block nav %}
+      <a href="/login">Student login</a>
+      <a href="/staff/login">Staff</a>
+    {% endblock %}</nav>
+  </header>
+  {% endblock %}
+  {% block body %}
+  <main class="{% block mainclass %}{% endblock %}">{% block content %}{% endblock %}</main>
+  {% endblock %}
+  <footer class="footer">pseudo//eval · write the logic, skip the syntax</footer>
+  <div id="toasts" aria-live="polite"></div>
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Staff · Pseudo//Eval{% endblock %}
+{% block nav %}<span id="me" class="muted"></span><a href="#" id="logout">Sign out</a>{% endblock %}
+{% block content %}
+<div class="eyebrow">Staff dashboard</div>
+<h1>Test control</h1>
+<div class="panel" id="testbar" style="padding:.8rem 1.1rem;margin-bottom:1.25rem">
+  <div class="inline">
+    <label class="label" for="testPick">Test</label>
+    <select id="testPick" style="max-width:360px"></select>
+    <span id="testPhase"></span>
+  </div>
+</div>
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" data-tab="tests" aria-selected="true">Tests</button>
+  <button class="tab" role="tab" data-tab="contest" aria-selected="false" data-scoped>Settings</button>
+  <button class="tab" role="tab" data-tab="monitor" aria-selected="false" data-scoped>Live monitor</button>
+  <button class="tab" role="tab" data-tab="questions" aria-selected="false" data-scoped>Questions</button>
+  <button class="tab" role="tab" data-tab="subs" aria-selected="false" data-scoped>Submissions</button>
+  <button class="tab" role="tab" data-tab="results" aria-selected="false" data-scoped>Results</button>
+  <button class="tab" role="tab" data-tab="students" aria-selected="false">Students</button>
+</div>
+<p id="noTest" class="muted hidden">Create a test in the <b>Tests</b> tab first.</p>
+
+<section id="tab-tests">
+  <div class="panel">
+    <div class="table-wrap"><table>
+      <thead><tr><th>Test</th><th>Status</th><th class="num">Min</th><th class="num">Qs</th><th class="num">Started</th><th class="num">Submitted</th><th></th></tr></thead>
+      <tbody id="testRows"></tbody></table></div>
+  </div>
+  <form id="tnew" class="panel" novalidate>
+    <h3>Create a test</h3>
+    <div class="grid2">
+      <div class="field"><label for="tTitle">Title</label><input id="tTitle" name="title" required maxlength="120" placeholder="e.g. Round 1 — Aptitude + Pseudocode"></div>
+      <div class="field"><label for="tDur">Duration (minutes)</label><input id="tDur" name="duration_minutes" type="number" min="1" max="600" value="60" required></div>
+    </div>
+    <div class="field" style="max-width:420px"><label for="tCopy">Copy questions from (optional)</label><select id="tCopy" name="copy_from"><option value="">Start empty</option></select></div>
+    <div class="form-error" role="alert"></div>
+    <div class="actions"><button class="btn" type="submit">Create test</button></div>
+  </form>
+</section>
+
+<section id="tab-contest" class="hidden">
+  <form id="cfg" class="panel" novalidate>
+    <div class="field"><label for="title">Test title</label><input id="title" name="title" required maxlength="120"></div>
+    <div class="grid2">
+      <div class="field"><label for="duration">Duration per student (minutes)</label><input id="duration" name="duration_minutes" type="number" min="1" max="600" required></div>
+      <div class="field"><label>Status</label><div id="phase" style="padding:.6rem 0"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="opens">Opens at (your local time)</label><input id="opens" name="opens_at" type="datetime-local"></div>
+      <div class="field"><label for="closes">Closes at (your local time)</label><input id="closes" name="closes_at" type="datetime-local"></div>
+    </div>
+    <p class="muted" style="font-size:.9rem">A student's personal timer starts when they press Start and never runs past the closing time. Leave the times empty for no restriction.</p>
+    <h3 style="margin-top:1.5rem">Evaluation</h3>
+    <div class="grid2">
+      <div class="field"><label for="evalMode">Start evaluating</label>
+        <select id="evalMode" name="eval_mode">
+          <option value="manual">Manually (I press “Queue grading”)</option>
+          <option value="immediate">Immediately, as each student finishes</option>
+          <option value="after_close">After the test closes</option>
+          <option value="scheduled">At a specific time</option>
+        </select></div>
+      <div class="field" id="evalAtBox"><label for="evalAt">Start at (your local time)</label><input id="evalAt" name="eval_at" type="datetime-local"></div>
+      <div class="field" id="evalDelayBox"><label for="evalDelay">Wait after closing (minutes)</label><input id="evalDelay" name="eval_delay_minutes" type="number" min="0" max="10080" value="0"></div>
+    </div>
+    <p class="muted" id="evalHelp" style="font-size:.9rem"></p>
+    <label class="check"><input type="checkbox" id="published" name="published"><span>Published (students can start when the window is open)</span></label>
+    <div class="form-error" role="alert"></div>
+    <div class="actions"><button class="btn" type="submit">Save settings</button><button class="btn danger" type="button" id="delTest">Delete test</button></div>
+  </form>
+</section>
+
+<section id="tab-monitor" class="hidden">
+  <div class="stats" id="mstats"></div>
+  <div class="panel">
+    <h3>Announcement to students taking this test</h3>
+    <div class="inline">
+      <input id="annText" maxlength="300" placeholder="e.g. 10 minutes left. Save your answers." style="flex:1;min-width:220px;max-width:none">
+      <button class="btn small" id="annSend" type="button">Send</button>
+      <button class="btn ghost small" id="annClear" type="button">Clear</button>
+    </div>
+    <p class="muted mono" id="annNow" style="margin:.6rem 0 0;font-size:.8rem"></p>
+  </div>
+  <div class="panel">
+    <div class="actions" style="margin:0 0 1rem"><span class="muted mono" id="mclock" style="font-size:.8rem">Auto-refreshing every 5 s</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Reg no</th><th>Name</th><th>Status</th><th class="num">Time left</th><th class="num">Answered</th><th class="num" title="Tab/window switches">Tabs</th><th class="num">Paste</th><th>Actions</th></tr></thead>
+      <tbody id="mrows"></tbody></table></div>
+  </div>
+</section>
+
+<section id="tab-questions" class="hidden">
+  <div id="qlist"></div>
+  <form id="qnew" class="panel" novalidate>
+    <h3>Add a question</h3>
+    <div class="field"><label for="qtext">Question</label><textarea id="qtext" name="text" required maxlength="2000" rows="3"></textarea></div>
+    <div class="field" style="max-width:180px"><label for="qscore">Max score</label><input id="qscore" name="max_score" type="number" min="1" max="100" value="10" required></div>
+    <div class="form-error" role="alert"></div>
+    <div class="actions"><button class="btn" type="submit">Add question</button></div>
+  </form>
+</section>
+
+<section id="tab-students" class="hidden">
+  <div class="panel">
+    <h3>Upload student list <span class="muted mono" style="font-size:.75rem">(shared by all tests)</span></h3>
+    <p class="muted">CSV or Excel (.xlsx) with a header row. Required columns: <code>RegNo</code>, <code>Name</code>, <code>DOB</code> (YYYY-MM-DD or DD-MM-YYYY). Optional: <code>Email</code>, <code>Mobile</code>, <code>Year</code>, <code>Branch</code>, <code>Section</code>. Existing register numbers are updated; their answers are kept. The date of birth is the student's sign-in key.</p>
+    <div class="actions">
+      <input type="file" id="rosterFile" accept=".csv,.xlsx,.txt" style="max-width:340px">
+      <button class="btn" id="rosterUpload" type="button">Upload</button>
+      <button class="btn ghost small" id="rosterTemplate" type="button">Download template</button>
+    </div>
+    <div id="rosterResult" style="margin-top:1rem"></div>
+  </div>
+  <form id="snew" class="panel" novalidate>
+    <h3>Add one student</h3>
+    <div class="grid2">
+      <div class="field"><label for="sReg">Register / roll number</label><input id="sReg" name="RegNo" inputmode="numeric" required></div>
+      <div class="field"><label for="sName">Full name</label><input id="sName" name="Name" required maxlength="100"></div>
+      <div class="field"><label for="sDob">Date of birth</label><input id="sDob" name="dob" type="date" required></div>
+      <div class="field"><label for="sEmail">Email (optional)</label><input id="sEmail" name="email" type="email"></div>
+      <div class="field"><label for="sMob">Mobile (optional)</label><input id="sMob" name="MobNo" inputmode="numeric" maxlength="10"></div>
+      <div class="field"><label for="sBranch">Branch (optional)</label><input id="sBranch" name="Branch" maxlength="30"></div>
+      <div class="field"><label for="sYear">Year (optional)</label><input id="sYear" name="year" type="number" min="1" max="4"></div>
+      <div class="field"><label for="sSec">Section (optional)</label><input id="sSec" name="Sec" maxlength="10"></div>
+    </div>
+    <div class="form-error" role="alert"></div>
+    <div class="actions"><button class="btn" type="submit">Add student</button></div>
+  </form>
+  <div class="panel">
+    <h3>Roster <span class="muted mono" id="rosterCount"></span></h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Reg no</th><th>Name</th><th>Dept</th><th></th></tr></thead>
+      <tbody id="rosterRows"></tbody></table></div>
+  </div>
+</section>
+
+<section id="tab-subs" class="hidden">
+  <div class="stats" id="stats"></div>
+  <div class="panel">
+    <div class="actions" style="margin:0 0 1rem"><button class="btn ghost small" id="refresh">Refresh</button>
+      <span class="muted mono" style="font-size:.8rem">Scores appear after the grader runs: <code>python -m app.grader.evaluator</code></span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Reg no</th><th>Name</th><th>Dept</th><th>Status</th><th>Answered</th><th>Score</th></tr></thead>
+      <tbody id="subrows"></tbody></table></div>
+  </div>
+  <div id="detail"></div>
+</section>
+<section id="tab-results" class="hidden">
+  <div class="panel">
+    <div class="inline" style="justify-content:space-between"><h3 style="margin:0">Grading jobs</h3><span id="workerChip"></span></div>
+    <p class="muted" id="evalSummary" style="margin:.6rem 0"></p>
+    <p class="muted" style="font-size:.9rem">Grading runs as a background job. A worker process polls the database, so you can close this page. Only finished attempts (submitted or out of time) are graded; answers already scored are skipped.</p>
+    <div class="actions"><button class="btn" id="gradeRun" type="button">Queue grading now</button><label class="check" style="margin:0"><input type="checkbox" id="gradeForce"><span>Re-grade everything</span></label></div>
+    <div class="table-wrap" style="margin-top:1rem"><table>
+      <thead><tr><th>Status</th><th>Trigger</th><th>Queued</th><th class="num">Progress</th><th></th></tr></thead>
+      <tbody id="jobRows"></tbody></table></div>
+    <div id="gradeStatus" style="margin-top:1rem"></div>
+  </div>
+  <div class="panel">
+    <div class="inline" style="margin-bottom:1rem">
+      <label class="label" for="cutoff">Shortlist cutoff (total score ≥)</label>
+      <input id="cutoff" type="number" min="0" placeholder="e.g. 50">
+      <button class="btn ghost small" id="cutApply" type="button">Apply</button>
+      <a class="btn small" id="csvLink" href="/api/staff/results.csv">Download CSV</a>
+    </div>
+    <div class="stats" id="rstats"></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="num">#</th><th>Reg no</th><th>Name</th><th>Dept</th><th>Status</th><th class="num">Score</th><th></th></tr></thead>
+      <tbody id="rrows"></tbody></table></div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/js/staff.js"></script>{% endblock %}

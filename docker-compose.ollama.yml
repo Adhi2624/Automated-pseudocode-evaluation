@@ -1,0 +1,17 @@
+# Grade with a local Ollama model instead of a hosted API:
+#   docker compose -f docker-compose.yml -f docker-compose.ollama.yml up -d --build
+# Ollama keeps listening on 127.0.0.1 only; the worker joins the host network to reach it
+# (and Mongo's published 127.0.0.1:27017), so nothing is exposed to your LAN.
+# Change LLM_MODEL to any model you have pulled (e.g. llama3.1:8b).
+services:
+  worker:
+    network_mode: host
+    extra_hosts: !reset []        # host networking cannot be combined with extra_hosts
+    environment:
+      MONGO_URI: mongodb://localhost:27017/
+      LLM_BASE_URL: http://localhost:11434/v1
+      LLM_MODEL: ${OLLAMA_MODEL:-qwen3:4b}
+      LLM_API_KEY: ollama          # Ollama ignores the key, the grader just requires one to be set
+      LLM_JSON_MODE: "true"
+      LLM_TIMEOUT: "240"           # small local models are slow on the first call (model load)
+      EVAL_DELAY_SECONDS: "0"

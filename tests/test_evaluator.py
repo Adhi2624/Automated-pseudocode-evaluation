@@ -4,9 +4,9 @@ import pytest
 import requests
 import requests_mock as rm_mod  # noqa: F401  (ensures plugin installed)
 
-from common.config import Settings
-from common.answers import flatten_answers
-from pseudo_evaluation import evaluator as ev
+from app.config import Settings
+from app.services.answers import flatten_answers
+from app.grader import evaluator as ev
 
 QUESTIONS = {
     0: {"id": 0, "text": "Q zero", "max_score": 10},

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Submitted · Pseudo//Eval{% endblock %}
+{% block mainclass %}narrow{% endblock %}
+{% block content %}
+<div class="eyebrow">Done</div>
+<h1>Answers received<span class="cursor"></span></h1>
+<div class="panel accent">
+  <p>Your submission is saved. Results are published by the staff after grading.</p>
+  <div class="actions"><a class="btn" href="/tests">Back to tests</a><button class="btn ghost" id="out">Sign out</button></div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+$("#out").addEventListener("click", async () => { try { await api("/api/student/logout", { method: "POST" }); } catch (e) {} location.href = "/"; });
+</script>{% endblock %}
