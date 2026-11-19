@@ -71,6 +71,9 @@ def call_llm(prompt, settings, session):
     }
     if settings.llm_json_mode:
         payload["response_format"] = {"type": "json_object"}
+    if getattr(settings, "llm_reasoning_effort", ""):
+        # e.g. "none" turns thinking off on reasoning models served by Ollama (about 80x faster for qwen3)
+        payload["reasoning_effort"] = settings.llm_reasoning_effort
     headers = {"Authorization": f"Bearer {settings.llm_api_key}"}
     attempts = settings.llm_retries + 1
     last_error = None

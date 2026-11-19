@@ -13,5 +13,8 @@ services:
       LLM_MODEL: ${OLLAMA_MODEL:-qwen3:4b}
       LLM_API_KEY: ollama          # Ollama ignores the key, the grader just requires one to be set
       LLM_JSON_MODE: "true"
+      # qwen3 "thinks" for ~4000 tokens (~60 s) per answer by default; "none" makes each call < 1 s.
+      # Set OLLAMA_REASONING= (empty) to let the model think: more accurate, far too slow for a class.
+      LLM_REASONING_EFFORT: ${OLLAMA_REASONING-none}
       LLM_TIMEOUT: "240"           # small local models are slow on the first call (model load)
       EVAL_DELAY_SECONDS: "0"

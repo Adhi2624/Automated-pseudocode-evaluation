@@ -32,6 +32,7 @@ class Settings:
     session_hours: int = 12
     worker_poll_seconds: float = 5.0
     embedded_worker: bool = False
+    llm_reasoning_effort: str = ""
 
     @property
     def llm_url(self) -> str:
@@ -68,4 +69,5 @@ def get_settings() -> Settings:
         session_hours=int(env("SESSION_HOURS", "12")),
         worker_poll_seconds=float(env("WORKER_POLL_SECONDS", "5")),
         embedded_worker=env("EMBEDDED_WORKER", "false").strip().lower() in ("1", "true", "yes"),
+        llm_reasoning_effort=env("LLM_REASONING_EFFORT", "").strip().lower(),
     )

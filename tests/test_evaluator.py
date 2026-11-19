@@ -393,3 +393,16 @@ def test_xlsx_formula_cells_escaped(tmp_path):
     for row in ws.iter_rows():
         for c in row:
             assert c.data_type != "f"
+
+
+def test_reasoning_effort_sent_only_when_configured(requests_mock):
+    import requests
+    base = dict(mongo_uri="x", mongo_db="d", mongo_collection="c", cors_origins=(), llm_base_url="http://llm/v1",
+                llm_model="m", llm_api_key="k", llm_json_mode=True, llm_timeout=5, llm_retries=0,
+                eval_delay_seconds=0, max_answer_chars=100, output_xlsx="x.xlsx")
+    requests_mock.post("http://llm/v1/chat/completions", json={"choices": [{"message": {"content": "{}"}}]})
+    with requests.Session() as s:
+        ev.call_llm("p", Settings(**base), s)
+        assert "reasoning_effort" not in requests_mock.last_request.json()
+        ev.call_llm("p", Settings(**base, llm_reasoning_effort="none"), s)
+        assert requests_mock.last_request.json()["reasoning_effort"] == "none"

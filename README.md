@@ -62,6 +62,7 @@ tests/
 | LLM_API_KEY | (required for grading) | API key for the LLM provider (`OPENROUTER_API_KEY` also accepted); keep secret, never commit |
 | LLM_BASE_URL | https://openrouter.ai/api/v1 | Any OpenAI-compatible base URL (OpenRouter, OpenAI `https://api.openai.com/v1`, vLLM, Ollama `http://host:11434/v1`, ...); `/chat/completions` is appended |
 | LLM_MODEL | meta-llama/llama-3.1-70b-instruct | Model id for that provider |
+| LLM_REASONING_EFFORT | (empty) | Sent as `reasoning_effort` (e.g. `none` disables thinking on Ollama reasoning models) |
 | LLM_JSON_MODE | true | Send `response_format: json_object`; set false if the provider rejects it |
 | LLM_TIMEOUT | 60 | Seconds per LLM request |
 | LLM_RETRIES | 3 | Retries per request |
@@ -140,7 +141,7 @@ docker compose up --build
 ollama pull qwen3:4b          # or llama3.1:8b, then: OLLAMA_MODEL=llama3.1:8b
 docker compose -f docker-compose.yml -f docker-compose.ollama.yml up -d --build
 ```
-Ollama stays bound to `127.0.0.1`; the override puts the worker on the host network so it can reach it, without exposing the model server to your LAN. Small local models are slower and less consistent graders than large hosted ones, so spot-check scores before shortlisting.
+Ollama stays bound to `127.0.0.1`; the override puts the worker on the host network so it can reach it, without exposing the model server to your LAN. `qwen3:4b` "thinks" for about a minute per answer by default, so the override sends `reasoning_effort: none` (under a second per answer; set `OLLAMA_REASONING=` to turn thinking back on). Small local models are noisy graders: the same correct answer scored 3 without thinking and 10 with it, so spot-check scores before shortlisting, or use a larger model (`llama3.1:8b`) or a hosted API.
 
 **Render** (`render.yaml`): a single free web service with the worker embedded (`EMBEDDED_WORKER=true`). Set `MONGO_URI` (your MongoDB server), `STAFF_USERNAME`, `STAFF_PASSWORD` and `LLM_API_KEY` as secrets in the dashboard. Free services sleep when idle, so wake the site before a test and prefer a paid plan with a separate worker for real exams.
 
