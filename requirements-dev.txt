@@ -1,0 +1,6 @@
+pytest
+httpx<0.28
+mongomock
+requests-mock
+-r fastapi/requirements.txt
+-r pseudo_evaluation/requirements.txt
