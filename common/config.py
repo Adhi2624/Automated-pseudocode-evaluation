@@ -15,10 +15,11 @@ class Settings:
     mongo_db: str
     mongo_collection: str
     cors_origins: tuple
-    ollama_url: str
-    ollama_model: str
-    ollama_timeout: float
-    ollama_retries: int
+    llm_url: str
+    llm_model: str
+    llm_api_key: str
+    llm_timeout: float
+    llm_retries: int
     eval_delay_seconds: float
     max_answer_chars: int
     output_xlsx: str
@@ -37,10 +38,11 @@ def get_settings() -> Settings:
         mongo_db=env("MONGO_DB", "sproc"),
         mongo_collection=env("MONGO_COLLECTION", "user-details"),
         cors_origins=_parse_origins(env("CORS_ORIGINS", "")),
-        ollama_url=env("OLLAMA_URL", "http://localhost:11434/api/generate"),
-        ollama_model=env("OLLAMA_MODEL", "llama3.1:latest"),
-        ollama_timeout=float(env("OLLAMA_TIMEOUT", "60")),
-        ollama_retries=int(env("OLLAMA_RETRIES", "3")),
+        llm_url=env("LLM_URL", "https://openrouter.ai/api/v1/chat/completions"),
+        llm_model=env("LLM_MODEL", "meta-llama/llama-3.1-70b-instruct"),
+        llm_api_key=env("OPENROUTER_API_KEY", ""),
+        llm_timeout=float(env("LLM_TIMEOUT", "60")),
+        llm_retries=int(env("LLM_RETRIES", "3")),
         eval_delay_seconds=float(env("EVAL_DELAY_SECONDS", "1")),
         max_answer_chars=int(env("MAX_ANSWER_CHARS", "4000")),
         output_xlsx=env("OUTPUT_XLSX", "user_pseudocode_scores.xlsx"),

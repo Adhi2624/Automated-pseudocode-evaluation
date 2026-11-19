@@ -42,10 +42,11 @@ An efficient platform for evaluating pseudocode submissions in programming compe
 | MONGO_DB | sproc | Database name |
 | MONGO_COLLECTION | user-details | Collection name |
 | CORS_ORIGINS | (empty) | Comma-separated allowed origins; empty disables CORS |
-| OLLAMA_URL | http://localhost:11434/api/generate | Ollama endpoint used by the grader |
-| OLLAMA_MODEL | llama3.1:latest | Model used by the grader |
-| OLLAMA_TIMEOUT | 60 | Seconds per Ollama request |
-| OLLAMA_RETRIES | 3 | Retries per request |
+| OPENROUTER_API_KEY | (required for grading) | OpenRouter API key; keep it secret, never commit it |
+| LLM_URL | https://openrouter.ai/api/v1/chat/completions | Chat completions endpoint |
+| LLM_MODEL | meta-llama/llama-3.1-70b-instruct | OpenRouter model id used by the grader |
+| LLM_TIMEOUT | 60 | Seconds per LLM request |
+| LLM_RETRIES | 3 | Retries per request |
 | EVAL_DELAY_SECONDS | 1 | Delay between grading calls |
 | MAX_ANSWER_CHARS | 4000 | Max characters per submitted answer |
 | OUTPUT_XLSX | user_pseudocode_scores.xlsx | Grader output file |

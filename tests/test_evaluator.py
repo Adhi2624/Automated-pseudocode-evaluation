@@ -18,8 +18,8 @@ QUESTIONS = {
 def make_settings(**kw):
     base = dict(
         mongo_uri="x", mongo_db="d", mongo_collection="c", cors_origins=(),
-        ollama_url="http://ollama.test/api/generate", ollama_model="m",
-        ollama_timeout=5.0, ollama_retries=2, eval_delay_seconds=0.0,
+        llm_url="http://llm.test/v1/chat/completions", llm_model="m", llm_api_key="k",
+        llm_timeout=5.0, llm_retries=2, eval_delay_seconds=0.0,
         max_answer_chars=100, output_xlsx="x.xlsx",
     )
     base.update(kw)
@@ -44,9 +44,13 @@ class Resp:
         return self._body
 
 
+def chat(content):
+    return {"choices": [{"message": {"content": content}}]}
+
+
 def ok_body(score=7, expl="fine"):
     import json
-    return Resp(200, {"response": json.dumps({"Score": score, "Explanation": expl})})
+    return Resp(200, chat(json.dumps({"Score": score, "Explanation": expl})))
 
 
 class FakeSession:
@@ -54,7 +58,7 @@ class FakeSession:
         self.handler = handler
         self.calls = []
 
-    def post(self, url, json=None, timeout=None):
+    def post(self, url, json=None, headers=None, timeout=None):
         self.calls.append(json)
         return self.handler(len(self.calls), json)
 
@@ -148,60 +152,76 @@ def test_prompt_uses_max_score():
     assert "0 to 5" in ev.build_prompt(QUESTIONS[2], "x")
 
 
-# ---- call_ollama ----
-def test_call_ollama_ok_with_requests_mock(requests_mock):
+# ---- call_llm ----
+def test_call_llm_ok_with_requests_mock(requests_mock):
     s = make_settings()
-    requests_mock.post(s.ollama_url, json={"response": "hello"})
+    requests_mock.post(s.llm_url, json={"choices": [{"message": {"content": "hello"}}]})
     with requests.Session() as sess:
-        assert ev.call_ollama("p", s, sess) == "hello"
-    assert requests_mock.last_request.json()["stream"] is False
+        assert ev.call_llm("p", s, sess) == "hello"
+    assert requests_mock.last_request.json()["model"] == "m"
 
 
-def test_call_ollama_retries_then_succeeds(requests_mock, no_sleep):
-    s = make_settings(ollama_retries=3)
-    requests_mock.post(s.ollama_url, [
-        {"exc": requests.ConnectTimeout}, {"status_code": 503}, {"json": {"response": "ok"}},
+def test_call_llm_retries_then_succeeds(requests_mock, no_sleep):
+    s = make_settings(llm_retries=3)
+    requests_mock.post(s.llm_url, [
+        {"exc": requests.ConnectTimeout}, {"status_code": 503}, {"json": chat("ok")},
     ])
-    assert ev.call_ollama("p", s, requests.Session()) == "ok"
+    assert ev.call_llm("p", s, requests.Session()) == "ok"
     assert requests_mock.call_count == 3
     assert no_sleep == [1, 2]  # exponential backoff
 
 
-def test_call_ollama_gives_up(requests_mock):
-    s = make_settings(ollama_retries=2)
-    requests_mock.post(s.ollama_url, exc=requests.ReadTimeout)
+def test_call_llm_gives_up(requests_mock):
+    s = make_settings(llm_retries=2)
+    requests_mock.post(s.llm_url, exc=requests.ReadTimeout)
     with pytest.raises(RuntimeError):
-        ev.call_ollama("p", s, requests.Session())
+        ev.call_llm("p", s, requests.Session())
     assert requests_mock.call_count == 3
 
 
-def test_call_ollama_4xx_no_retry(requests_mock):
+def test_call_llm_4xx_no_retry(requests_mock):
     s = make_settings()
-    requests_mock.post(s.ollama_url, status_code=404)
+    requests_mock.post(s.llm_url, status_code=404)
     with pytest.raises(RuntimeError):
-        ev.call_ollama("p", s, requests.Session())
+        ev.call_llm("p", s, requests.Session())
     assert requests_mock.call_count == 1
 
 
-def test_call_ollama_bad_body(requests_mock):
+def test_call_llm_bad_body(requests_mock):
     s = make_settings()
-    requests_mock.post(s.ollama_url, text="<html>")
+    requests_mock.post(s.llm_url, text="<html>")
     with pytest.raises(RuntimeError):
-        ev.call_ollama("p", s, requests.Session())
-    requests_mock.post(s.ollama_url, json={"nope": 1})
+        ev.call_llm("p", s, requests.Session())
+    requests_mock.post(s.llm_url, json={"nope": 1})
     with pytest.raises(RuntimeError):
-        ev.call_ollama("p", s, requests.Session())
+        ev.call_llm("p", s, requests.Session())
 
 
-def test_call_ollama_passes_timeout():
+def test_call_llm_passes_timeout():
     seen = {}
 
     class S:
-        def post(self, url, json=None, timeout=None):
+        def post(self, url, json=None, headers=None, timeout=None):
             seen["t"] = timeout
             return ok_body()
-    ev.call_ollama("p", make_settings(ollama_timeout=12.0), S())
+    ev.call_llm("p", make_settings(llm_timeout=12.0), S())
     assert seen["t"][1] == 12.0
+
+
+def test_call_llm_sends_bearer_key_and_chat_payload(requests_mock):
+    s = make_settings()
+    requests_mock.post(s.llm_url, json=chat("ok"))
+    ev.call_llm("p", s, requests.Session())
+    req = requests_mock.last_request
+    assert req.headers["Authorization"] == "Bearer k"
+    body = req.json()
+    assert body["model"] == "m" and body["messages"][0]["content"] == "p"
+    assert body["temperature"] == 0
+
+
+def test_call_llm_requires_api_key():
+    with pytest.raises(RuntimeError):
+        ev.call_llm("p", make_settings(llm_api_key=""), object())
 
 
 # ---- evaluate_answer / evaluate_user ----
@@ -215,10 +235,10 @@ def test_blank_answers_score_zero_without_llm():
 
 
 def test_evaluate_user_one_failure_aligned_by_id():
-    s = make_settings(ollama_retries=0)
+    s = make_settings(llm_retries=0)
 
     def handler(n, payload):
-        if "Q one" in payload["prompt"]:
+        if "Q one" in payload["messages"][0]["content"]:
             return Resp(500)
         return ok_body(score=4)
     sess = FakeSession(handler)
@@ -258,7 +278,7 @@ def test_unknown_question_ids_ignored():
 
 
 def test_reask_once_on_bad_output_then_ok():
-    outs = iter([Resp(200, {"response": "garbage"}), ok_body(6)])
+    outs = iter([Resp(200, chat("garbage")), ok_body(6)])
     sess = FakeSession(lambda n, p: next(outs))
     r = ev.evaluate_answer(0, "a", QUESTIONS, make_settings(), sess)
     assert r["status"] == "ok" and r["score"] == 6
@@ -266,7 +286,7 @@ def test_reask_once_on_bad_output_then_ok():
 
 
 def test_bad_output_twice_is_error():
-    sess = FakeSession(lambda n, p: Resp(200, {"response": '{"Score": 99, "Explanation": "x"}'}))
+    sess = FakeSession(lambda n, p: Resp(200, chat('{"Score": 99, "Explanation": "x"}')))
     r = ev.evaluate_answer(0, "a", QUESTIONS, make_settings(), sess)
     assert r["status"] == "error" and r["score"] is None
     assert len(sess.calls) == 2
@@ -276,7 +296,7 @@ def test_timeout_exhausts_retries_gives_error():
     def handler(n, p):
         raise requests.Timeout()
     sess = FakeSession(handler)
-    r = ev.evaluate_answer(0, "a", QUESTIONS, make_settings(ollama_retries=2), sess)
+    r = ev.evaluate_answer(0, "a", QUESTIONS, make_settings(llm_retries=2), sess)
     assert r["status"] == "error"
     assert len(sess.calls) == 3
 
@@ -303,11 +323,11 @@ def test_total_score_excludes_errors():
 
 
 def test_rerun_only_retries_errors():
-    s = make_settings(ollama_retries=0)
+    s = make_settings(llm_retries=0)
     state = {"fail": True}
 
     def handler(n, p):
-        if "Q one" in p["prompt"] and state["fail"]:
+        if "Q one" in p["messages"][0]["content"] and state["fail"]:
             return Resp(500)
         return ok_body(5)
     sess = FakeSession(handler)

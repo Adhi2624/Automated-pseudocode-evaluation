@@ -1,4 +1,4 @@
-"""Grade stored pseudocode answers with a local Ollama model.
+"""Grade stored pseudocode answers with an LLM via OpenRouter.
 
 Run from the repository root:  python -m pseudo_evaluation.evaluator
 """
@@ -56,42 +56,48 @@ def build_prompt(question, answer, max_answer_chars=4000):
     )
 
 
-def call_ollama(prompt, settings, session):
-    """POST to Ollama and return the raw model text. Raises RuntimeError on failure."""
+def call_llm(prompt, settings, session):
+    """POST to OpenRouter (OpenAI-compatible chat API); return the raw model text.
+
+    Raises RuntimeError on failure. The API key is never logged.
+    """
+    if not settings.llm_api_key:
+        raise RuntimeError("OPENROUTER_API_KEY is not set")
     payload = {
-        "model": settings.ollama_model,
-        "prompt": prompt,
-        "stream": False,
-        "format": "json",
-        "options": {"temperature": 0},
+        "model": settings.llm_model,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
+        "response_format": {"type": "json_object"},
     }
-    attempts = settings.ollama_retries + 1
+    headers = {"Authorization": f"Bearer {settings.llm_api_key}"}
+    attempts = settings.llm_retries + 1
     last_error = None
     for attempt in range(attempts):
         if attempt:
             time.sleep(BACKOFF_BASE_SECONDS * 2 ** (attempt - 1))
         try:
             resp = session.post(
-                settings.ollama_url, json=payload, timeout=(5, settings.ollama_timeout)
+                settings.llm_url, json=payload, headers=headers,
+                timeout=(5, settings.llm_timeout),
             )
         except (requests.Timeout, requests.ConnectionError) as exc:
             last_error = f"{type(exc).__name__}"
-            log.warning("Ollama request failed (%s), attempt %d/%d", last_error, attempt + 1, attempts)
+            log.warning("LLM request failed (%s), attempt %d/%d", last_error, attempt + 1, attempts)
             continue
         if resp.status_code == 429 or resp.status_code >= 500:
             last_error = f"HTTP {resp.status_code}"
-            log.warning("Ollama returned %s, attempt %d/%d", last_error, attempt + 1, attempts)
+            log.warning("LLM returned %s, attempt %d/%d", last_error, attempt + 1, attempts)
             continue
         if resp.status_code != 200:
-            raise RuntimeError(f"Ollama returned HTTP {resp.status_code}")
+            raise RuntimeError(f"LLM returned HTTP {resp.status_code}")
         try:
-            text = resp.json().get("response")
-        except ValueError:
-            raise RuntimeError("Ollama returned a non-JSON body")
+            text = resp.json()["choices"][0]["message"]["content"]
+        except (ValueError, KeyError, IndexError, TypeError):
+            raise RuntimeError("LLM response missing message content")
         if not isinstance(text, str):
-            raise RuntimeError("Ollama response missing 'response' text")
+            raise RuntimeError("LLM response content is not text")
         return text
-    raise RuntimeError(f"Ollama unavailable after {attempts} attempts: {last_error}")
+    raise RuntimeError(f"LLM unavailable after {attempts} attempts: {last_error}")
 
 
 def parse_result(raw, max_score=10):
@@ -121,20 +127,20 @@ def _record(score, explanation, status, settings):
         "score": score,
         "explanation": explanation,
         "status": status,
-        "model": settings.ollama_model,
+        "model": settings.llm_model,
         "evaluated_at": _now(),
     }
 
 
 def _throttled_call(prompt, settings, session):
-    """Call Ollama, sleeping eval_delay_seconds only after a previous real call."""
+    """Call the LLM, sleeping eval_delay_seconds only after a previous real call."""
     last = getattr(session, "_last_llm_call", None)
     if last is not None and settings.eval_delay_seconds > 0:
         wait = settings.eval_delay_seconds - (time.monotonic() - last)
         if wait > 0:
             time.sleep(wait)
     try:
-        return call_ollama(prompt, settings, session)
+        return call_llm(prompt, settings, session)
     finally:
         try:
             session._last_llm_call = time.monotonic()
@@ -218,7 +224,7 @@ def export_xlsx(users, questions, path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Grade pseudocode answers with Ollama")
+    parser = argparse.ArgumentParser(description="Grade pseudocode answers with an LLM (OpenRouter)")
     parser.add_argument("--force", action="store_true", help="re-evaluate already graded answers")
     parser.add_argument("--reg-no", type=int, help="only evaluate this RegNo")
     parser.add_argument("--no-xlsx", action="store_true", help="skip spreadsheet export")
