@@ -205,7 +205,7 @@ async function loadSubs() {
     const stat = (n, label) => h("div", { class: "stat" }, h("b", {}, n), h("span", {}, label));
     $("#stats").replaceChildren(stat(rows.length, "Registered"), stat(progress, "In progress"), stat(submitted, "Submitted"));
     $("#subrows").replaceChildren(...rows.map((r) => h("tr", { class: "click", tabindex: 0, onclick: () => showDetail(r.RegNo), onkeydown: (e) => { if (e.key === "Enter") showDetail(r.RegNo); } },
-      h("td", { class: "mono" }, r.RegNo), h("td", {}, r.Name), h("td", {}, `${r.Branch} · Y${r.year}${r.Sec}`),
+      h("td", { class: "mono" }, r.RegNo), h("td", {}, r.Name), h("td", {}, [r.Branch, r.year && "Y" + r.year, r.Sec].filter(Boolean).join(" · ") || "—"),
       h("td", {}, subStatus(r)), h("td", {}, r.answered), h("td", { class: "mono" }, r.totalScore ?? "—"))));
     if (!rows.length) $("#subrows").replaceChildren(h("tr", {}, h("td", { colspan: 6, class: "muted" }, "No students registered yet.")));
   } catch (e) { toast(e.message, "error"); }
@@ -406,7 +406,7 @@ async function loadResults(opts = {}) {
   try {
     const r = await call(T("/results") + q);
     const stat = (n, label) => h("div", { class: "stat" }, h("b", {}, n), h("span", {}, label));
-    $("#rstats").replaceChildren(stat(r.rows.length, "Students"), stat(r.graded, "Graded"), stat(r.max_total, "Max score"), q ? stat(r.shortlisted, "Shortlisted") : null);
+    $("#rstats").replaceChildren(stat(r.rows.length, "Students"), stat(r.graded, "Graded"), stat(r.max_total, "Max score"), ...(q ? [stat(r.shortlisted, "Shortlisted")] : []));
     $("#rrows").replaceChildren(...(r.rows.length ? r.rows.map((x, i) => {
       const [kind, label] = STATE_CHIP[x.state];
       return h("tr", { class: x.shortlisted ? "short click" : "click", tabindex: 0, onclick: () => { selectTab("subs"); showDetail(x.RegNo); } },

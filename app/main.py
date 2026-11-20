@@ -43,7 +43,24 @@ async def lifespan(app: FastAPI):
         client.close()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    resp = await call_next(request)
+    h = resp.headers
+    h.setdefault("X-Content-Type-Options", "nosniff")
+    h.setdefault("X-Frame-Options", "DENY")
+    h.setdefault("Referrer-Policy", "same-origin")
+    h.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    h.setdefault("Content-Security-Policy",
+                 "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                 "frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+    if settings.cookie_secure:
+        h.setdefault("Strict-Transport-Security", "max-age=31536000")
+    return resp
+
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.add_middleware(

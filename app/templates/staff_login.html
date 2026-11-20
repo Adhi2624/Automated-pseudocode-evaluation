@@ -11,9 +11,4 @@
   <div class="actions"><button class="btn" type="submit">Sign in</button></div>
 </form>
 {% endblock %}
-{% block scripts %}<script>
-bindForm($("#staff"), async (f) => {
-  await api("/api/staff/login", { method: "POST", body: { username: f.username, password: f.password } });
-  location.href = "/staff";
-});
-</script>{% endblock %}
+{% block scripts %}<script src="/static/js/staff_login.js"></script>{% endblock %}

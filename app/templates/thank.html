@@ -9,6 +9,4 @@
   <div class="actions"><a class="btn" href="/tests">Back to tests</a><button class="btn ghost" id="out">Sign out</button></div>
 </div>
 {% endblock %}
-{% block scripts %}<script>
-$("#out").addEventListener("click", async () => { try { await api("/api/student/logout", { method: "POST" }); } catch (e) {} location.href = "/"; });
-</script>{% endblock %}
+{% block scripts %}<script src="/static/js/thank.js"></script>{% endblock %}
